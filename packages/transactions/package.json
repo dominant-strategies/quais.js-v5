@@ -9,7 +9,8 @@
     "@quais/logger": "^0.1.0",
     "@quais/properties": "^0.1.0",
     "@quais/rlp": "^0.1.0",
-    "@quais/signing-key": "^0.1.0"
+    "@quais/signing-key": "^0.1.0",
+    "long": "^5.2.3"
   },
   "description": "Utilities for decoding and encoding Ethereum transaction for quais.",
   "keywords": [

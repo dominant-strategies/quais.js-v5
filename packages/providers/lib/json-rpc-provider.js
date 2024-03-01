@@ -285,6 +285,7 @@ var JsonRpcSigner = /** @class */ (function (_super) {
                 });
             }); });
         }
+        console.log("Tx to send2: ", transaction);
         return (0, properties_1.resolveProperties)({
             tx: (0, properties_1.resolveProperties)(transaction),
             sender: fromAddress
@@ -326,6 +327,7 @@ var JsonRpcSigner = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.provider._getInternalBlockNumber(100 + 2 * this.provider.pollingInterval)];
                     case 1:
                         blockNumber = _a.sent();
+                        console.log(" tx to send1: ", transaction);
                         return [4 /*yield*/, this.sendUncheckedTransaction(transaction)];
                     case 2:
                         hash = _a.sent();
@@ -339,6 +341,7 @@ var JsonRpcSigner = /** @class */ (function (_super) {
                                         case 0: return [4 /*yield*/, this.provider.getTransaction(hash)];
                                         case 1:
                                             tx = _a.sent();
+                                            console.log('Returned provider tx:', tx);
                                             if (tx === null) {
                                                 return [2 /*return*/, undefined];
                                             }

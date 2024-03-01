@@ -22,6 +22,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@quais/address");
@@ -33,6 +36,7 @@ var RLP = __importStar(require("@quais/rlp"));
 var signing_key_1 = require("@quais/signing-key");
 var logger_1 = require("@quais/logger");
 var _version_1 = require("./_version");
+var long_1 = __importDefault(require("long"));
 var logger = new logger_1.Logger(_version_1.version);
 var TransactionTypes;
 (function (TransactionTypes) {
@@ -43,14 +47,32 @@ var TransactionTypes;
 ;
 ///////////////////////////////
 function handleAddress(value) {
+    console.log('Handle Address: ', value);
+    if (typeof value != "string") {
+        value = (0, bytes_1.hexlify)(value);
+    }
     if (value === "0x") {
         return null;
     }
+    console.log('Value: ', value);
     return (0, address_1.getAddress)(value);
 }
 function handleNumber(value) {
-    if (value === "0x") {
-        return constants_1.Zero;
+    if (typeof value === "string") {
+        if (value === "0x") {
+            return constants_1.Zero;
+        }
+    }
+    else if ((0, bytes_1.isBytesLike)(value)) {
+        if (value.length === 0) {
+            return constants_1.Zero;
+        }
+        value = (0, bytes_1.hexlify)(value);
+    }
+    else {
+        console.log('Value long: ', value);
+        var long = new long_1.default(value.low, value.high, value.unsigned);
+        value = long.toString(16);
     }
     return bignumber_1.BigNumber.from(value);
 }
@@ -122,25 +144,28 @@ function _serialize(transaction, signature) {
             });
         }
     }
-    var fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
-        formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? (0, address_1.getAddress)(transaction.to) : "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
+    console.log("Transaction: ", transaction);
+    var formattedTx = {
+        chain_id: formatNumber(transaction.chainId || 0, "chainId"),
+        nonce: (transaction.nonce || 0),
+        gas_tip_cap: formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
+        gas_fee_cap: formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
+        gas: (transaction.gasLimit || 0),
+        to: transaction.to != null ? (0, bytes_1.arrayify)(transaction.to) : "0x",
+        value: formatNumber(transaction.value || 0, "value"),
+        data: (0, bytes_1.arrayify)(transaction.data || "0x"),
+        access_list: { access_tuples: [] },
+        type: (transaction.type || 0),
+    };
     if (signature) {
         var sig = (0, bytes_1.splitSignature)(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push((0, bytes_1.stripZeros)(sig.r));
-        fields.push((0, bytes_1.stripZeros)(sig.s));
+        formattedTx.v = formatNumber(sig.recoveryParam, "recoveryParam");
+        formattedTx.r = (0, bytes_1.stripZeros)(sig.r);
+        formattedTx.s = (0, bytes_1.stripZeros)(sig.s);
+        //formattedTx.signature = arrayify(signature);
     }
-    //console.log('Encoding tx: \n', JSON.stringify(fields, null, 4));
-    return (0, bytes_1.hexConcat)(["0x00", RLP.encode(fields)]);
+    console.log('Encoding tx: \n', JSON.stringify(formattedTx, null, 4));
+    return RLP.encode(formattedTx);
 }
 function _serializeStandardETx(transaction, signature) {
     var fields = [
@@ -204,30 +229,22 @@ function _parseEipSignature(tx, fields, serialize) {
 }
 function _parse(payload) {
     var transaction = RLP.decode(payload.slice(1));
-    if (transaction.length !== 9 && transaction.length !== 12) {
-        logger.throwArgumentError("invalid component count for transaction type: 0", "payload", (0, bytes_1.hexlify)(payload));
-    }
-    var maxPriorityFeePerGas = handleNumber(transaction[2]);
-    var maxFeePerGas = handleNumber(transaction[3]);
+    console.log("Parsed Transaction: ", transaction);
     var tx = {
         type: 0,
-        chainId: handleNumber(transaction[0]).toNumber(),
-        nonce: handleNumber(transaction[1]).toNumber(),
-        maxPriorityFeePerGas: maxPriorityFeePerGas,
-        maxFeePerGas: maxFeePerGas,
+        chainId: handleNumber(transaction.chain_id).toNumber(), //handleNumber(transaction[0]).toNumber(),
+        nonce: handleNumber(transaction.nonce).toNumber(),
+        maxPriorityFeePerGas: handleNumber(transaction.gas_tip_cap),
+        maxFeePerGas: handleNumber(transaction.gas_fee_cap),
         gasPrice: null,
-        gasLimit: handleNumber(transaction[4]),
-        to: handleAddress(transaction[5]),
-        value: handleNumber(transaction[6]),
-        data: transaction[7],
-        accessList: accessListify(transaction[8]),
+        gasLimit: handleNumber(transaction.gas),
+        to: handleAddress(transaction.to),
+        value: handleNumber(transaction.value),
+        data: (0, bytes_1.hexlify)(transaction.data),
+        accessList: accessListify(transaction.access_list),
     };
-    // Unsigned EIP-1559 Transaction
-    if (transaction.length === 9) {
-        return tx;
-    }
     tx.hash = (0, keccak256_1.keccak256)(payload);
-    _parseEipSignature(tx, transaction.slice(9), _serialize);
+    _parseEipSignature(tx, [(0, bytes_1.hexlify)(transaction.v), transaction.r, transaction.s], _serialize);
     return tx;
 }
 function _parseStandardETx(payload) {
@@ -264,6 +281,8 @@ function _parseStandardETx(payload) {
     return tx;
 }
 function parse(rawTransaction) {
+    var deserializedTx = RLP.decode(rawTransaction);
+    console.log('Deserialized tx: ', deserializedTx);
     var payload = (0, bytes_1.arrayify)(rawTransaction);
     // Typed Transaction (EIP-2718)
     switch (payload[0]) {

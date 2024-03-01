@@ -113,6 +113,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     }
 
     signTransaction(transaction: TransactionRequest): Promise<string> {
+        console.log("signTransaction", transaction)
         return resolveProperties(transaction).then((tx) => {
             if (tx.from != null) {
                 if (getAddress(tx.from) !== this.address) {
@@ -120,8 +121,9 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
                 }
                 delete tx.from;
             }
-
-            const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)));
+            const serialized = serialize(<UnsignedTransaction>tx)
+            console.log("serialized: ", serialized)
+            const signature = this._signingKey().signDigest(keccak256(serialized));
             return serialize(<UnsignedTransaction>tx, signature);
         });
     }

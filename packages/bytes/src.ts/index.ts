@@ -1,5 +1,4 @@
 "use strict";
-
 import { Logger } from "@quais/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -269,6 +268,7 @@ export function hexDataLength(data: BytesLike) {
 
     return (data.length - 2) / 2;
 }
+
 
 export function hexDataSlice(data: BytesLike, offset: number, endOffset?: number): string {
     if (typeof(data) !== "string") {

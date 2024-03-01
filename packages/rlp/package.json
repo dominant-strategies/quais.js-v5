@@ -2,7 +2,8 @@
   "author": "",
   "dependencies": {
     "@quais/bytes": "^0.1.0",
-    "@quais/logger": "^0.1.0"
+    "@quais/logger": "^0.1.0",
+    "google-protobuf": "^3.21.2"
   },
   "description": "Recursive-Length Prefix (RLP) coder.",
   "ethereum": "donations.quais.eth",
@@ -39,5 +40,8 @@
   "sideEffects": false,
   "tarballHash": "0x93c77ed49afe2043ac918ada4f24d3d1edbb4ce4f0f40e62eeeeed396d30ef45",
   "types": "./lib/index.d.ts",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.12"
+  }
 }

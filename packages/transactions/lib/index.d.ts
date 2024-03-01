@@ -54,6 +54,11 @@ export interface Transaction {
     input?: string;
     sender?: string;
 }
+export interface ILong {
+    low: number;
+    high: number;
+    unsigned: boolean;
+}
 export declare function computeAddress(key: BytesLike | string): string;
 export declare function recoverAddress(digest: BytesLike, signature: SignatureLike): string;
 export declare function accessListify(value: AccessListish): AccessList;

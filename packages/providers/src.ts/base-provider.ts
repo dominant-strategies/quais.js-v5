@@ -1569,8 +1569,11 @@ export class BaseProvider extends Provider implements EnsProvider {
 
    async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
        await this.getNetwork();
+       console.log('here')
        const hexTx = await Promise.resolve(signedTransaction).then(t => hexlify(t));
+       console.log("Hextx: ", hexTx)
        const tx = this.formatter.transaction(signedTransaction);
+       console.log('Formatted base tx: ', tx)
        if (tx.confirmations == null) { tx.confirmations = 0; }
        const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
        try {
@@ -1863,7 +1866,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
        return poll(async () => {
            const result = await this.perform("getTransaction", params);
-
+            console.log("Returnded rpc tx: ", result);
            if (result == null) {
                if (this._emitted["t:" + transactionHash] == null) {
                    return null;

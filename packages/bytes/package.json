@@ -1,7 +1,8 @@
 {
   "author": "",
   "dependencies": {
-    "@quais/logger": "^0.1.0"
+    "@quais/logger": "^0.1.0",
+    "long": "^5.2.3"
   },
   "description": "Bytes utility functions for quais.",
   "keywords": [
