@@ -1,124 +1,70 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decode = exports.encode = void 0;
+exports.decode = exports._decode = exports.encode = exports._encode = void 0;
 //See: https://github.com/ethereum/wiki/wiki/RLP
 var bytes_1 = require("@quais/bytes");
-var logger_1 = require("@quais/logger");
-var _version_1 = require("./_version");
-var logger = new logger_1.Logger(_version_1.version);
-function arrayifyInteger(value) {
-    var result = [];
-    while (value) {
-        result.unshift(value & 0xff);
-        value >>= 8;
-    }
-    return result;
+// const messages = require('./binary/proto_block_pb.js');
+//import from proto-block
+var Proto = __importStar(require("./proto-block"));
+function _encode(transaction) {
+    // const message = new messages.ProtoTransaction();
+    // message.setNonce(transaction.nonce);
+    // message.setGasPrice(transaction.gasPrice);
+    // message.setGasLimit(transaction.gasLimit);
+    // message.setTo(transaction.to);
+    // message.setValue(transaction.value);
+    // message.setData(transaction.data);
+    // message.setV(transaction.v);
+    // message.setR(transaction.r);
+    // message.setS(transaction.s);
+    // message.setChainId(transaction.chainId);
+    // message.setAccessList(transaction.accessList);
+    // const result = message.serializeBinary();
+    console.log('proto tx: ', transaction);
+    var tx = Proto.block.ProtoTransaction.fromObject(transaction);
+    return tx.serialize();
 }
-function unarrayifyInteger(data, offset, length) {
-    var result = 0;
-    for (var i = 0; i < length; i++) {
-        result = (result * 256) + data[offset + i];
-    }
-    return result;
-}
-function _encode(object) {
-    if (Array.isArray(object)) {
-        var payload_1 = [];
-        object.forEach(function (child) {
-            payload_1 = payload_1.concat(_encode(child));
-        });
-        if (payload_1.length <= 55) {
-            payload_1.unshift(0xc0 + payload_1.length);
-            return payload_1;
-        }
-        var length_1 = arrayifyInteger(payload_1.length);
-        length_1.unshift(0xf7 + length_1.length);
-        return length_1.concat(payload_1);
-    }
-    if (!(0, bytes_1.isBytesLike)(object)) {
-        logger.throwArgumentError("RLP object must be BytesLike", "object", object);
-    }
-    var data = Array.prototype.slice.call((0, bytes_1.arrayify)(object));
-    if (data.length === 1 && data[0] <= 0x7f) {
-        return data;
-    }
-    else if (data.length <= 55) {
-        data.unshift(0x80 + data.length);
-        return data;
-    }
-    var length = arrayifyInteger(data.length);
-    length.unshift(0xb7 + length.length);
-    return length.concat(data);
-}
+exports._encode = _encode;
 function encode(object) {
     return (0, bytes_1.hexlify)(_encode(object));
 }
 exports.encode = encode;
-function _decodeChildren(data, offset, childOffset, length) {
-    var result = [];
-    while (childOffset < offset + 1 + length) {
-        var decoded = _decode(data, childOffset);
-        result.push(decoded.result);
-        childOffset += decoded.consumed;
-        if (childOffset > offset + 1 + length) {
-            logger.throwError("child data too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-    }
-    return { consumed: (1 + length), result: result };
+function _decode(encodedData) {
+    console.log('encodedData: ', encodedData);
+    // const message = messages.ProtoTransaction.deserializeBinary(encodedData);
+    // const tx = message.toObject();
+    var tx = Proto.block.ProtoTransaction.deserialize(encodedData);
+    console.log('decoded proto tx: ', tx);
+    return tx;
 }
-// returns { consumed: number, result: Object }
-function _decode(data, offset) {
-    if (data.length === 0) {
-        logger.throwError("data too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-    }
-    // Array with extra length prefix
-    if (data[offset] >= 0xf8) {
-        var lengthLength = data[offset] - 0xf7;
-        if (offset + 1 + lengthLength > data.length) {
-            logger.throwError("data short segment too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        var length_2 = unarrayifyInteger(data, offset + 1, lengthLength);
-        if (offset + 1 + lengthLength + length_2 > data.length) {
-            logger.throwError("data long segment too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        return _decodeChildren(data, offset, offset + 1 + lengthLength, lengthLength + length_2);
-    }
-    else if (data[offset] >= 0xc0) {
-        var length_3 = data[offset] - 0xc0;
-        if (offset + 1 + length_3 > data.length) {
-            logger.throwError("data array too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        return _decodeChildren(data, offset, offset + 1, length_3);
-    }
-    else if (data[offset] >= 0xb8) {
-        var lengthLength = data[offset] - 0xb7;
-        if (offset + 1 + lengthLength > data.length) {
-            logger.throwError("data array too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        var length_4 = unarrayifyInteger(data, offset + 1, lengthLength);
-        if (offset + 1 + lengthLength + length_4 > data.length) {
-            logger.throwError("data array too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        var result = (0, bytes_1.hexlify)(data.slice(offset + 1 + lengthLength, offset + 1 + lengthLength + length_4));
-        return { consumed: (1 + lengthLength + length_4), result: result };
-    }
-    else if (data[offset] >= 0x80) {
-        var length_5 = data[offset] - 0x80;
-        if (offset + 1 + length_5 > data.length) {
-            logger.throwError("data too short", logger_1.Logger.errors.BUFFER_OVERRUN, {});
-        }
-        var result = (0, bytes_1.hexlify)(data.slice(offset + 1, offset + 1 + length_5));
-        return { consumed: (1 + length_5), result: result };
-    }
-    return { consumed: 1, result: (0, bytes_1.hexlify)(data[offset]) };
-}
+exports._decode = _decode;
 function decode(data) {
     var bytes = (0, bytes_1.arrayify)(data);
-    var decoded = _decode(bytes, 0);
-    if (decoded.consumed !== bytes.length) {
-        logger.throwArgumentError("invalid rlp data", "data", data);
-    }
-    return decoded.result;
+    var decoded = _decode(bytes);
+    return decoded;
 }
 exports.decode = decode;
 //# sourceMappingURL=index.js.map

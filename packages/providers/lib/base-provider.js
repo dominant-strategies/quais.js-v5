@@ -1725,10 +1725,13 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _a.sent();
+                        console.log('here');
                         return [4 /*yield*/, Promise.resolve(signedTransaction).then(function (t) { return (0, bytes_1.hexlify)(t); })];
                     case 2:
                         hexTx = _a.sent();
+                        console.log("Hextx: ", hexTx);
                         tx = this.formatter.transaction(signedTransaction);
+                        console.log('Formatted base tx: ', tx);
                         if (tx.confirmations == null) {
                             tx.confirmations = 0;
                         }
@@ -2129,6 +2132,7 @@ var BaseProvider = /** @class */ (function (_super) {
                                         case 0: return [4 /*yield*/, this.perform("getTransaction", params)];
                                         case 1:
                                             result = _a.sent();
+                                            console.log("Returnded rpc tx: ", result);
                                             if (result == null) {
                                                 if (this._emitted["t:" + transactionHash] == null) {
                                                     return [2 /*return*/, null];

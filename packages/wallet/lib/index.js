@@ -153,6 +153,7 @@ var Wallet = /** @class */ (function (_super) {
     };
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
+        console.log("signTransaction", transaction);
         return (0, properties_1.resolveProperties)(transaction).then(function (tx) {
             if (tx.from != null) {
                 if ((0, address_1.getAddress)(tx.from) !== _this.address) {
@@ -160,7 +161,9 @@ var Wallet = /** @class */ (function (_super) {
                 }
                 delete tx.from;
             }
-            var signature = _this._signingKey().signDigest((0, keccak256_1.keccak256)((0, transactions_1.serialize)(tx)));
+            var serialized = (0, transactions_1.serialize)(tx);
+            console.log("serialized: ", serialized);
+            var signature = _this._signingKey().signDigest((0, keccak256_1.keccak256)(serialized));
             return (0, transactions_1.serialize)(tx, signature);
         });
     };

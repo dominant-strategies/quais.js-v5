@@ -236,7 +236,7 @@ export class JsonRpcSigner extends Signer implements TypedDataSigner {
                 return address;
             });
         }
-
+        console.log("Tx to send2: ", transaction);
         return resolveProperties({
             tx: resolveProperties(transaction),
             sender: fromAddress
@@ -277,6 +277,7 @@ export class JsonRpcSigner extends Signer implements TypedDataSigner {
         // This cannot be mined any earlier than any recent block
         const blockNumber = await this.provider._getInternalBlockNumber(100 + 2 * this.provider.pollingInterval);
 
+        console.log(" tx to send1: ", transaction);
         // Send the transaction
         const hash = await this.sendUncheckedTransaction(transaction);
 
@@ -286,6 +287,7 @@ export class JsonRpcSigner extends Signer implements TypedDataSigner {
             // for it; it should show up very quickly
             return await poll(async () => {
                 const tx = await this.provider.getTransaction(hash);
+                console.log('Returned provider tx:', tx);
                 if (tx === null) { return undefined; }
                 return this.provider._wrapTransaction(tx, hash, blockNumber);
             }, { oncePoll: this.provider });

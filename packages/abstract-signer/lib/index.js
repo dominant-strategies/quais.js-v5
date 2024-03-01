@@ -148,6 +148,7 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, this.signTransaction(tx)];
                     case 2:
                         signedTx = _a.sent();
+                        console.log('SIGNED TX:', signedTx);
                         return [4 /*yield*/, this.provider.sendTransaction(signedTx)];
                     case 3: return [2 /*return*/, _a.sent()];
                 }
@@ -351,8 +352,10 @@ var Signer = /** @class */ (function () {
                                 });
                             });
                         }
+                        console.log('Chain ID:', tx.chainId);
                         if (tx.chainId == null) {
                             tx.chainId = this.getChainId();
+                            console.log('Chain ID:', tx.chainId);
                         }
                         else {
                             tx.chainId = Promise.all([

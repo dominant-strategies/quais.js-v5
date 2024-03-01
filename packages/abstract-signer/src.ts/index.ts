@@ -123,6 +123,7 @@ export abstract class Signer {
         this._checkProvider("sendTransaction");
         const tx = await this.populateTransaction(transaction);
         const signedTx = await this.signTransaction(tx);
+        console.log('SIGNED TX:',signedTx)
         return await this.provider.sendTransaction(signedTx);
     }
 
@@ -279,9 +280,10 @@ export abstract class Signer {
                 });
             });
         }
-
+        console.log('Chain ID:',tx.chainId)
         if (tx.chainId == null) {
             tx.chainId = this.getChainId();
+            console.log('Chain ID:',tx.chainId)
         } else {
             tx.chainId = Promise.all([
                 Promise.resolve(tx.chainId),
