@@ -348,9 +348,9 @@ function _parseStandardETx(payload: Uint8Array): Transaction {
     return tx;
 }
 
+
 export function parse(rawTransaction: BytesLike): Transaction {
     const deserializedTx = RLP.decode(rawTransaction);
-    console.log('Deserialized tx: ', deserializedTx)
     const payload = arrayify(rawTransaction);
     // Typed Transaction (EIP-2718)
     switch (payload[0]) {
